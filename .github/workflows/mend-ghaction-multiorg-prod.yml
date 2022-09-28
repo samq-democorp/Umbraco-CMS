@@ -2,20 +2,9 @@ name: Mend UA MultiOrg Scan
 
 on:
   push:
-    # branches:
-    # - v10/contrib
-    # - v9/contrib
-    # - v8/dev
-    # - feature/*
-    # - bugfix/*
-
 
 jobs:
-  prod:
-    if: github.ref_name == 'v10/contrib' || 
-      github.ref_name == 'v9/contrib' ||
-      github.ref_name == 'v8/dev'
-
+  mendscan:
     runs-on: ubuntu-latest
 
     steps:
@@ -26,8 +15,9 @@ jobs:
     - name: Build DotNET projects
       run: dotnet build umbraco.sln --configuration Release
     - name: WhiteSource Unified Agent Scan
+      if: contains('github.ref_name', 'feature') || 
+        contains('github.ref_name', 'bugfix')
       env:
-        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
         WS_APIKEY: ${{secrets.PROD_APIKEY}}
         WS_USERKEY: ${{secrets.PROD_USERKEY}}
         WS_WSS_URL: https://saas.mend.io/agent
@@ -38,23 +28,11 @@ jobs:
         curl -LJO https://unified-agent.s3.amazonaws.com/wss-unified-agent.jar
         echo Unified Agent downloaded successfully
         java -jar wss-unified-agent.jar -d ./src
-
-  dev:
-    if: contains('github.ref_name', 'feature') || 
-      contains('github.ref_name', 'bugfix')
-
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-dotnet@v2
-      with:
-        dotnet-version: 6.0.x
-    - name: Build DotNET projects
-      run: dotnet build umbraco.sln --configuration Release
-    - name: WhiteSource Unified Agent Scan
+    - name: Mend Unified Agent Development Org Scan
+      if: github.ref_name == 'v10/contrib' || 
+        github.ref_name == 'v9/contrib' ||
+        github.ref_name == 'v8/dev'
       env:
-        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
         WS_APIKEY: ${{secrets.DEV_APIKEY}}
         WS_USERKEY: ${{secrets.DEV_USERKEY}}
         WS_WSS_URL: https://saas.mend.io/agent
