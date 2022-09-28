@@ -1,3 +1,6 @@
 {
-  "settingsInheritedFrom": "samq-democorp/whitesource-config@main"
+  "settingsInheritedFrom": "samq-democorp/whitesource-config@main",
+    "scanSettings": {
+    "baseBranches": ["v10/contrib", "v9/contrib", "v8/dev"]
+  }
 }
