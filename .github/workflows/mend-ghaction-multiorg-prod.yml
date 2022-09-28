@@ -15,7 +15,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - uses: actions/setup-dotnet@v3
+    - uses: actions/setup-dotnet@v2
       with:
         dotnet-version: 5.0.x
     - name: Build DotNET projects
