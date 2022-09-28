@@ -37,5 +37,31 @@ jobs:
       run: |
         curl -LJO https://unified-agent.s3.amazonaws.com/wss-unified-agent.jar
         echo Unified Agent downloaded successfully
-        java -jar wss-unified-agent.jar
-        
+        java -jar wss-unified-agent.jar -d ./src
+
+  dev:
+    if: contains('github.ref_name', 'feature') || 
+      contains('github.ref_name', 'bugfix')
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: 6.0.x
+    - name: Build DotNET projects
+      run: dotnet build umbraco.sln --configuration Release
+    - name: WhiteSource Unified Agent Scan
+      env:
+        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        WS_APIKEY: ${{secrets.DEV_APIKEY}}
+        WS_USERKEY: ${{secrets.DEV_USERKEY}}
+        WS_WSS_URL: https://saas.mend.io/agent
+        WS_PRODUCTNAME: ${{github.event.repository.name}}_${{github.ref_name}}
+        WS_PROJECTPERFOLDER: true
+        WS_GENERATEPROJECTDETAILSJSON: true
+      run: |
+        curl -LJO https://unified-agent.s3.amazonaws.com/wss-unified-agent.jar
+        echo Unified Agent downloaded successfully
+        java -jar wss-unified-agent.jar -d ./src
