@@ -12,7 +12,9 @@ on:
 
 jobs:
   prod:
-    if: ${{github.ref_name}} 
+    if: github.ref_name == 'v10/contrib' || 
+      github.ref_name == 'v9/contrib' ||
+      github.ref_name == 'v8/dev'
 
     runs-on: ubuntu-latest
 
