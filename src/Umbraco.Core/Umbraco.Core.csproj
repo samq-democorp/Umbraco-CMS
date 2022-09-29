@@ -126,6 +126,7 @@
     <Compile Include="Constants-*.cs">
       <DependentUpon>Constants.cs</DependentUpon>
     </Compile>
+    Mend Force Scan Comment
     -->
     <Compile Include="AssemblyExtensions.cs" />
     <Compile Include="Collections\StackQueue.cs" />
