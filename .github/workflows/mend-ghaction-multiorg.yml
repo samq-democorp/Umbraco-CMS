@@ -6,8 +6,8 @@ on:
      - v10/contrib
      - v9/contrib
      - v8/dev
-     - feature/*
-     - bugfix/*
+     - '**feature/**'
+     - '**bugfix/**'
 
 jobs:
   mendscan:

@@ -4,7 +4,7 @@
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <PackageId>Umbraco.Cms</PackageId>
     <Title>Umbraco.Cms</Title>
-    <Description>Force Mend Scan - Installs Umbraco CMS in your ASP.NET Core project</Description>
+    <Description>Force Mend Scan1 - Installs Umbraco CMS in your ASP.NET Core project</Description>
     <IncludeSymbols>false</IncludeSymbols>
   </PropertyGroup>
 
