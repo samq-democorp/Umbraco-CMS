@@ -18,8 +18,8 @@ jobs:
     - uses: actions/setup-dotnet@v2
       with:
         dotnet-version: 6.0.x
-    - name: Build DotNET projects
-      run: dotnet build umbraco.sln --configuration Release
+    #- name: Build DotNET projects
+    #  run: dotnet build umbraco.sln --configuration Release
     - name: Mend Unified Agent Production Org Scan
       if: github.ref_name == 'v10/contrib' || 
         github.ref_name == 'v9/contrib' ||
@@ -36,8 +36,8 @@ jobs:
         echo Unified Agent downloaded successfully
         java -jar wss-unified-agent.jar -d ./src
     - name: Mend Unified Agent Development Org Scan
-      if: contains('feature', 'github.ref_name') ||
-        contains('bugfix', 'github.ref_name')
+      if: contains(github.ref_name, 'feature') ||
+        contains(github.ref_name, 'bugfix')
       env:
         WS_APIKEY: ${{secrets.DEV_APIKEY}}
         WS_USERKEY: ${{secrets.DEV_USERKEY}}
