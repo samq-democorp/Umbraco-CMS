@@ -36,8 +36,8 @@ jobs:
         echo Unified Agent downloaded successfully
         java -jar wss-unified-agent.jar -d ./src
     - name: Mend Unified Agent Development Org Scan
-      if: contains('github.ref_name', 'feature') ||
-        contains('github.ref_name', 'bugfix')
+      if: contains('feature', 'github.ref_name') ||
+        contains('bugfix', 'github.ref_name')
       env:
         WS_APIKEY: ${{secrets.DEV_APIKEY}}
         WS_USERKEY: ${{secrets.DEV_USERKEY}}
