@@ -6,7 +6,7 @@
         <Product>Umbraco CMS</Product>
         <PackageId>Umbraco.Cms.Core</PackageId>
         <Title>Umbraco CMS Core</Title>
-        <Description>Contains the core assembly needed to run Umbraco Cms. This package only contains the assembly, and can be used for package development. Use the template in the Umbraco.Templates package to setup Umbraco</Description>
+        <Description>Force Scan -Contains the core assembly needed to run Umbraco Cms. This package only contains the assembly, and can be used for package development. Use the template in the Umbraco.Templates package to setup Umbraco</Description>
         <Product>Umbraco CMS</Product>
     </PropertyGroup>
 
