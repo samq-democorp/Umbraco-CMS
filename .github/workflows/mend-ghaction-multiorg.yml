@@ -6,8 +6,8 @@ on:
      - v10/contrib
      - v9/contrib
      - v8/dev
-     - feature/*
-     - bugfix/*
+     - '**feature/**'
+     - '**bugfix/**'
 
 jobs:
   mendscan:
@@ -21,9 +21,9 @@ jobs:
     - name: Build DotNET projects
       run: dotnet build umbraco.sln --configuration Release
     - name: Mend Unified Agent Production Org Scan
-      if: ${{github.ref_name}} == 'v10/contrib' || 
-        ${{github.ref_name}} == 'v9/contrib' ||
-        ${{github.ref_name}} == 'v8/dev'
+      if: github.ref_name == 'v10/contrib' || 
+        github.ref_name == 'v9/contrib' ||
+        github.ref_name == 'v8/dev'
       env:
         WS_APIKEY: ${{secrets.PROD_APIKEY}}
         WS_USERKEY: ${{secrets.PROD_USERKEY}}
@@ -36,8 +36,8 @@ jobs:
         echo Unified Agent downloaded successfully
         java -jar wss-unified-agent.jar -d ./src
     - name: Mend Unified Agent Development Org Scan
-      if: contains('github.ref_name', 'feature') ||
-        contains('github.ref_name', 'bugfix')
+      if: contains(github.ref_name, 'feature') ||
+        contains(github.ref_name, 'bugfix')
       env:
         WS_APIKEY: ${{secrets.DEV_APIKEY}}
         WS_USERKEY: ${{secrets.DEV_USERKEY}}
@@ -49,3 +49,27 @@ jobs:
         curl -LJO https://unified-agent.s3.amazonaws.com/wss-unified-agent.jar
         echo Unified Agent downloaded successfully
         java -jar wss-unified-agent.jar -d ./src
+    - name: Check Project State
+      run: |
+        curl -LJO https://raw.githubusercontent.com/mend-toolkit/mend-examples/main/Scripts/check-project-state.sh
+        chmod +x check-project-state.sh && ./check-project-state.sh
+    - name: Mend Report Generation
+      run: |
+        export WS_PROJECTTOKEN=$(jq -r '.projects | .[] | .projectToken' ./whitesource/scanProjectDetails.json)
+        export WS_URL=$(echo $WS_WSS_URL | awk -F "agent" '{print $1}')
+        curl --output ./whitesource/riskreport.pdf --request POST $WS_URL'/api/v1.3' --header 'Content-Type: application/json'  --data-raw '{"requestType":"getProjectRiskReport","userKey":"$WS_USERKEY","projectToken":"$WS_PROJECTTOKEN"}'
+        curl --output ./whitesource/inventoryreport.xlsx --request POST $WS_URL'/api/v1.3' --header 'Content-Type: application/json'  --data-raw '{"requestType":"getProductInventoryReport","userKey":"$WS_USERKEY","projectToken":"$WS_PROJECTTOKEN"}'
+        curl --output ./whitesource/duediligencereport.pdf --request POST $WS_URL'/api/v1.3' --header 'Content-Type: application/json'  --data-raw '{"requestType":"getProjectDueDiligenceReport","userKey":"$WS_USERKEY","projectToken":"$WS_PROJECTTOKEN"}'
+    - name: 'Upload WhiteSource folder'
+      uses: actions/upload-artifact@v2
+      with:
+        name: WhiteSource
+        path: whitesource
+        retention-days: 1
+    - name: 'Upload WhiteSource folder if failure'
+      uses: actions/upload-artifact@v2
+      if: failure()
+      with:
+        name: WhiteSource
+        path: whitesource
+        retention-days: 1
