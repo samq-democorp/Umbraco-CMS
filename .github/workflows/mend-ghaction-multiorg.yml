@@ -18,8 +18,8 @@ jobs:
     - uses: actions/setup-dotnet@v2
       with:
         dotnet-version: 6.0.x
-    #- name: Build DotNET projects
-    #  run: dotnet build umbraco.sln --configuration Release
+    - name: Build DotNET projects
+      run: dotnet build umbraco.sln --configuration Release
     - name: Mend Unified Agent Production Org Scan
       if: github.ref_name == 'v10/contrib' || 
         github.ref_name == 'v9/contrib' ||
