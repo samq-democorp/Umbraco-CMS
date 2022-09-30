@@ -21,9 +21,9 @@ jobs:
     - name: Build DotNET projects
       run: dotnet build umbraco.sln --configuration Release
     - name: Mend Unified Agent Production Org Scan
-      if: ${{github.ref_name}} == 'v10/contrib' || 
-        ${{github.ref_name}} == 'v9/contrib' ||
-        ${{github.ref_name}} == 'v8/dev'
+      if: github.ref_name == 'v10/contrib' || 
+        github.ref_name == 'v9/contrib' ||
+        github.ref_name == 'v8/dev'
       env:
         WS_APIKEY: ${{secrets.PROD_APIKEY}}
         WS_USERKEY: ${{secrets.PROD_USERKEY}}
