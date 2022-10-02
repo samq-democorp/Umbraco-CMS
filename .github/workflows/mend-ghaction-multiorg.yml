@@ -6,13 +6,19 @@ on:
      - v10/contrib
      - v9/contrib
      - v8/dev
+     - dev
      - '**feature/**'
      - '**bugfix/**'
+
+env:
+  WS_WSS_URL: https://saas.mend.io/agent
+  WS_PRODUCTNAME: ${{github.event.repository.name}}_${{github.ref_name}}
+  WS_PROJECTPERFOLDER: true
+  WS_GENERATEPROJECTDETAILSJSON: true
 
 jobs:
   mendscan:
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v3
     - uses: actions/setup-dotnet@v2
@@ -20,31 +26,21 @@ jobs:
         dotnet-version: 6.0.x
     - name: Build DotNET projects
       run: dotnet build umbraco.sln --configuration Release
-    - name: Mend Unified Agent Production Org Scan
-      if: github.ref_name == 'v10/contrib' || 
+    - name: Set keys if triggered by production branches
+      if: github.ref_name == 'v10/contrib' ||
         github.ref_name == 'v9/contrib' ||
-        github.ref_name == 'v8/dev'
-      env:
-        WS_APIKEY: ${{secrets.PROD_APIKEY}}
-        WS_USERKEY: ${{secrets.PROD_USERKEY}}
-        WS_WSS_URL: https://saas.mend.io/agent
-        WS_PRODUCTNAME: ${{github.event.repository.name}}_${{github.ref_name}}
-        WS_PROJECTPERFOLDER: true
-        WS_GENERATEPROJECTDETAILSJSON: true
+        github.ref_name == 'v8/dev' ||
+        github.ref_name == 'dev'
       run: |
-        curl -LJO https://unified-agent.s3.amazonaws.com/wss-unified-agent.jar
-        echo Unified Agent downloaded successfully
-        java -jar wss-unified-agent.jar -d ./src
-    - name: Mend Unified Agent Development Org Scan
+        echo WS_APIKEY=${{secrets.PROD_APIKEY}} >> $GITHUB_ENV
+        echo WS_USERKEY=${{secrets.PROD_USERKEY}} >> $GITHUB_ENV
+    - name: Set keys if triggered by development branches
       if: contains(github.ref_name, 'feature') ||
         contains(github.ref_name, 'bugfix')
-      env:
-        WS_APIKEY: ${{secrets.DEV_APIKEY}}
-        WS_USERKEY: ${{secrets.DEV_USERKEY}}
-        WS_WSS_URL: https://saas.mend.io/agent
-        WS_PRODUCTNAME: ${{github.event.repository.name}}_${{github.ref_name}}
-        WS_PROJECTPERFOLDER: true
-        WS_GENERATEPROJECTDETAILSJSON: true
+      run: |
+        echo WS_APIKEY=${{secrets.DEV_APIKEY}} >> $GITHUB_ENV
+        echo WS_USERKEY=${{secrets.DEV_USERKEY}} >> $GITHUB_ENV
+    - name: Mend Unified Agent Scan
       run: |
         curl -LJO https://unified-agent.s3.amazonaws.com/wss-unified-agent.jar
         echo Unified Agent downloaded successfully
@@ -57,9 +53,15 @@ jobs:
       run: |
         export WS_PROJECTTOKEN=$(jq -r '.projects | .[] | .projectToken' ./whitesource/scanProjectDetails.json)
         export WS_URL=$(echo $WS_WSS_URL | awk -F "agent" '{print $1}')
-        curl --output ./whitesource/riskreport.pdf --request POST $WS_URL'/api/v1.3' --header 'Content-Type: application/json'  --data-raw '{"requestType":"getProjectRiskReport","userKey":"$WS_USERKEY","projectToken":"$WS_PROJECTTOKEN"}'
-        curl --output ./whitesource/inventoryreport.xlsx --request POST $WS_URL'/api/v1.3' --header 'Content-Type: application/json'  --data-raw '{"requestType":"getProductInventoryReport","userKey":"$WS_USERKEY","projectToken":"$WS_PROJECTTOKEN"}'
-        curl --output ./whitesource/duediligencereport.pdf --request POST $WS_URL'/api/v1.3' --header 'Content-Type: application/json'  --data-raw '{"requestType":"getProjectDueDiligenceReport","userKey":"$WS_USERKEY","projectToken":"$WS_PROJECTTOKEN"}'
+        curl -o ./whitesource/riskreport.pdf -X POST "${WS_URL}/api/v1.3" -H "Content-Type: application/json"  -d '{"requestType":"getProjectRiskReport","userKey":"'${WS_USERKEY}'","projectToken":"'${WS_PROJECTTOKEN}'"}'
+        curl -o ./whitesource/inventoryreport.xlsx -X POST "${WS_URL}/api/v1.3" -H "Content-Type: application/json"  -d '{"requestType":"getProjectInventoryReport","userKey":"'${WS_USERKEY}'","projectToken":"'${WS_PROJECTTOKEN}'"}'
+        curl -o ./whitesource/duediligencereport.xlsx -X POST "${WS_URL}/api/v1.3" -H "Content-Type: application/json"  -d '{"requestType":"getProjectDueDiligenceReport","userKey":"'${WS_USERKEY}'","projectToken":"'${WS_PROJECTTOKEN}'"}'
+    - name: Mend SBOM Generator
+      run: |
+        export WS_PROJECTTOKEN=$(jq -r '.projects | .[] | .projectToken' ./whitesource/scanProjectDetails.json)
+        export WS_URL=$(echo $WS_WSS_URL | awk -F "agent" '{print $1}')
+        pip install ws-sbom-generator
+        ws_sbom_generator -u $WS_USERKEY -k $WS_APIKEY -s $WS_PROJECTTOKEN -a $WS_URL -t all -o ./whitesource
     - name: 'Upload WhiteSource folder'
       uses: actions/upload-artifact@v2
       with:
