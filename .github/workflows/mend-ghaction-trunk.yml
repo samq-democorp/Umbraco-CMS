@@ -44,7 +44,7 @@ jobs:
     - name: Lookup Product based on repo and rename to _DELETE
       run: |
         WS_PRODUCTTOKEN=$(curl -X POST "${WS_URL}/api/v1.3" -H "Content-Type: application/json" \
-        -d '{ "requestType" : "getAllProducts",   "userKey" : "'${WS_USERKEY}'",  "orgToken": "'{$WS_APIKEY}'"}' | \
+        -d '{ "requestType" : "getAllProducts",   "userKey" : "'${WS_USERKEY}'",  "orgToken": "'${WS_APIKEY}'"}' | \
         jq -r --arg WS_PRODUCTNAME ${WS_PRODUCTNAME} '.products[] | select(.productName==$WS_PRODUCTNAME) | .productToken')
         echo "getting productToken=${WS_PRODUCTTOKEN} from productName=${WS_PRODUCTNAME}"
         curl -X POST "${WS_URL}/api/v1.3" -H "Content-Type: application/json" \
