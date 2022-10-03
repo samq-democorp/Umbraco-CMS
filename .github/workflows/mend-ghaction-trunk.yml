@@ -47,9 +47,9 @@ jobs:
         -d '{ "requestType" : "getAllProducts",   "userKey" : "'${WS_USERKEY}'",  "orgToken": "'${WS_APIKEY}'"}' | \
         jq -r --arg WS_PRODUCTNAME ${WS_PRODUCTNAME} '.products[] | select(.productName==$WS_PRODUCTNAME) | .productToken')
         echo "getting productToken=${WS_PRODUCTTOKEN} from productName=${WS_PRODUCTNAME}"
-#        curl -X POST "${WS_URL}/api/v1.3" -H "Content-Type: application/json" \
-#        -d '{ "requestType" : "renameProduct", "userKey" : "'${WS_USERKEY}'", "productToken" : "'${WS_PRODUCTTOKEN}'", "newProductName": "'${WS_PRODUCTNAME}'_DELETE"}'
-#        echo DELETE_PRODUCTTOKEN=$WS_PRODUCTTOKEN >> $GITHUB_ENV
+        curl -X POST "${WS_URL}/api/v1.3" -H "Content-Type: application/json" \
+        -d '{ "requestType" : "renameProduct", "userKey" : "'${WS_USERKEY}'", "productToken" : "'${WS_PRODUCTTOKEN}'", "newProductName": "'${WS_PRODUCTNAME}'_DELETE"}'
+        echo DELETE_PRODUCTTOKEN=$WS_PRODUCTTOKEN >> $GITHUB_ENV
     - name: Mend Unified Agent Scan
       run: |
         curl -LJO https://unified-agent.s3.amazonaws.com/wss-unified-agent.jar
