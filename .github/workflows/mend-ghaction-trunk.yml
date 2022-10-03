@@ -44,7 +44,7 @@ jobs:
       run: |
         WS_PRODUCTTOKEN=$(curl -X POST "${WS_URL}/api/v1.3" -H "Content-Type: application/json" \
         -d '{ "requestType" : "getAllProducts",   "userKey" : "'${WS_USERKEY}'",  "orgToken": "'{$WS_APIKEY}'"}' | \
-        jq -r --arg WS_PRODUCTNAME ${WS_PRODUCTNAME} '.products[] | select(.productName==${WS_PRODUCTNAME}) | .productToken')
+        jq -r --arg WS_PRODUCTNAME ${WS_PRODUCTNAME} '.products[] | select(.productName==$WS_PRODUCTNAME) | .productToken')
         echo "getting productToken=${WS_PRODUCTTOKEN} from productName=${WS_PRODUCTNAME}"
         curl -X POST "${WS_URL}/api/v1.3" -H "Content-Type: application/json" \
         -d '{ "requestType" : "renameProduct",   "userKey" : "'${WS_USERKEY}'",  "productToken": "'${WS_PRODUCTTOKEN}'"}, "newProductName": "'${WS_PRODUCTNAME}'_DELETE"'
@@ -54,6 +54,10 @@ jobs:
         curl -LJO https://unified-agent.s3.amazonaws.com/wss-unified-agent.jar
         echo Unified Agent downloaded successfully
         java -jar wss-unified-agent.jar -d ./src
+    - name: Tag Product with Commit
+      run: |
+        curl -X POST "${WS_URL}/api/v1.3" -H "Content-Type: application/json" \
+        -d '{ "requestType":"saveProductTag", "userKey":"'${WS_USERKEY}'", "productToken":"'${DELETE_PRODUCTTOKEN}'", "tagkey":"CommitHash", "tagValue":"'${{github.sha}}'" }'
 #    - name: Ignore Alerts Tool
 #      run: |
 #        export WS_URL=$(echo $WS_WSS_URL | awk -F "agent" '{print $1}')
