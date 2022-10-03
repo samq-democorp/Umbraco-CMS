@@ -40,28 +40,29 @@ jobs:
       run: |
         echo WS_APIKEY=${{secrets.DEV_APIKEY}} >> $GITHUB_ENV
         echo WS_USERKEY=${{secrets.DEV_USERKEY}} >> $GITHUB_ENV
+    - name: Lookup Product based on repo and rename to _DELETE
+      run: |
+        WS_PRODUCTTOKEN=$(curl -X POST "${WS_URL}/api/v1.3" -H "Content-Type: application/json" \
+        -d '{ "requestType" : "getAllProducts",   "userKey" : "'${WS_USERKEY}'",  "orgToken": "'{$WS_APIKEY}'"}' | \
+        jq -r --arg WS_PRODUCTNAME ${WS_PRODUCTNAME} '.products[] | select(.productName==${WS_PRODUCTNAME}) | .productToken')
+        echo "getting productToken=${WS_PRODUCTTOKEN} from productName=${WS_PRODUCTNAME}"
+        curl -X POST "${WS_URL}/api/v1.3" -H "Content-Type: application/json" \
+        -d '{ "requestType" : "renameProduct",   "userKey" : "'${WS_USERKEY}'",  "productToken": "'${WS_PRODUCTTOKEN}'"}, "newProductName": "'${WS_PRODUCTNAME}'_DELETE"'
+        echo DELETE_PRODUCTTOKEN=$WS_PRODUCTTOKEN >> $GITHUB_ENV
     - name: Mend Unified Agent Scan
       run: |
         curl -LJO https://unified-agent.s3.amazonaws.com/wss-unified-agent.jar
         echo Unified Agent downloaded successfully
         java -jar wss-unified-agent.jar -d ./src
-    - name: Check Project State
-      run: |
-        curl -LJO https://raw.githubusercontent.com/mend-toolkit/mend-examples/main/Scripts/check-project-state.sh
-        chmod +x check-project-state.sh && ./check-project-state.sh
-    - name: Mend Report Generation
-      run: |
-        export WS_PROJECTTOKEN=$(jq -r '.projects | .[] | .projectToken' ./whitesource/scanProjectDetails.json)
-        export WS_URL=$(echo $WS_WSS_URL | awk -F "agent" '{print $1}')
-        curl -o ./whitesource/riskreport.pdf -X POST "${WS_URL}/api/v1.3" -H "Content-Type: application/json"  -d '{"requestType":"getProjectRiskReport","userKey":"'${WS_USERKEY}'","projectToken":"'${WS_PROJECTTOKEN}'"}'
-        curl -o ./whitesource/inventoryreport.xlsx -X POST "${WS_URL}/api/v1.3" -H "Content-Type: application/json"  -d '{"requestType":"getProjectInventoryReport","userKey":"'${WS_USERKEY}'","projectToken":"'${WS_PROJECTTOKEN}'"}'
-        curl -o ./whitesource/duediligencereport.xlsx -X POST "${WS_URL}/api/v1.3" -H "Content-Type: application/json"  -d '{"requestType":"getProjectDueDiligenceReport","userKey":"'${WS_USERKEY}'","projectToken":"'${WS_PROJECTTOKEN}'"}'
-    - name: Mend SBOM Generator
-      run: |
-        export WS_PROJECTTOKEN=$(jq -r '.projects | .[] | .projectToken' ./whitesource/scanProjectDetails.json)
-        export WS_URL=$(echo $WS_WSS_URL | awk -F "agent" '{print $1}')
-        pip install ws-sbom-generator
-        ws_sbom_generator -u $WS_USERKEY -k $WS_APIKEY -s $WS_PROJECTTOKEN -a $WS_URL -t all -o ./whitesource
+#    - name: Ignore Alerts Tool
+#      run: |
+#        export WS_URL=$(echo $WS_WSS_URL | awk -F "agent" '{print $1}')
+#        pip install ws-ignore-alerts
+#        python ws_ignore_alerts.py -u $WS_URL -k $WS_USERKEY -o $WS_APIKEY -p $productToken -b $baselineProjectToken -n $destProjectName -v $destProjectVersion -t $destProjectToken -d $destProductToken
+#    - name: Delete Original Product
+#      run: | 
+#        curl -X POST "${WS_URL}/api/v1.3" -H "Content-Type: application/json" \
+#        -d '{ "requestType":"deleteProduct", "userKey":"'${WS_USERKEY}'", "orgToken":"'${WS_APIKEY}'", "productToken":"'${DELETE_PRODUCTTOKEN}'"}'
     - name: 'Upload WhiteSource folder'
       uses: actions/upload-artifact@v2
       with:
