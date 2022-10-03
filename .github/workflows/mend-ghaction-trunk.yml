@@ -50,6 +50,7 @@ jobs:
         curl -X POST "${WS_URL}/api/v1.3" -H "Content-Type: application/json" \
         -d '{ "requestType" : "renameProduct", "userKey" : "'${WS_USERKEY}'", "productToken" : "'${WS_PRODUCTTOKEN}'", "newProductName": "'${WS_PRODUCTNAME}'_DELETE"}'
         echo DELETE_PRODUCTTOKEN=$WS_PRODUCTTOKEN >> $GITHUB_ENV
+        echo "env variable for DELETE_PRODUCTION has beent set as ${DELETE_PRODUCTTOKEN} for productName=${WS_PRODUCTNAME}_DELETE"
     - name: Mend Unified Agent Scan
       run: |
         curl -LJO https://unified-agent.s3.amazonaws.com/wss-unified-agent.jar
@@ -63,17 +64,26 @@ jobs:
         echo "getting productToken=${WS_PRODUCTTOKEN} from productName=${WS_PRODUCTNAME}"
         curl -X POST "${WS_URL}/api/v1.3" -H "Content-Type: application/json" \
         -d '{ "requestType":"saveProductTag", "userKey":"'${WS_USERKEY}'", "productToken":"'${WS_PRODUCTTOKEN}'", "tagKey":"CommitHash", "tagValue":"'${{github.sha}}'" }'
-#    - name: Ignore Alerts Tool
-#      run: |
-#        pip install ws-ignore-alerts
-#        IGNORETOKEN=$(curl -X POST "${WS_URL}/api/v1.3" -H "Content-Type: application/json" \
-#        -d '{ "requestType" : "getAllProjects",   "userKey" : "'${WS_USERKEY}'",  "productToken": "'{$DELETE_PRODUCTOKEN}'"}' | \
-#        jq -r --arg '.products[] | select(.projectName=="projectnametoignorealerts") | .projectToken')
-#        python ws_ignore_alerts.py -u $WS_URL -k $WS_USERKEY -o $WS_APIKEY -p $DELETE_PRODUCTTOKEN -b $IGNORETOKEN -n $destProjectName
-#    - name: Delete Original Product
-#      run: | 
-#        curl -X POST "${WS_URL}/api/v1.3" -H "Content-Type: application/json" \
-#        -d '{ "requestType":"deleteProduct", "userKey":"'${WS_USERKEY}'", "orgToken":"'${WS_APIKEY}'", "productToken":"'${DELETE_PRODUCTTOKEN}'"}'
+        echo WS_PRODUCTTOKEN=$WS_PRODUCTTOKEN >> $GITHUB_ENV
+        echo "env variable for WS_PRODUCTTOKEN has beent set as ${WS_PRODUCTTOKEN} for productName=${WS_PRODUCTNAME}"
+    - name: Ignore Alerts Tool
+      run: |
+        pip install ws-ignore-alerts
+        readarray -t NEW_PROJECTS < <(jq -r '.projects[].projectName' ./scanProjectDetails.json)
+        echo "Projects to Ignore Alerts:" ${NEW_PROJECTS[*]}
+        echo "Delete Token = "${DELETE_PRODUCTTOKEN}
+        curl -X POST "${WS_URL}/api/v1.3" -H "Content-Type: application/json" \
+        -d '{ "requestType" : "getAllProjects",   "userKey" : "'${WS_USERKEY}'",  "productToken": "'${DELETE_PRODUCTTOKEN}'"}' > projectstodelete.json
+        for project in "${NEW_PROJECTS[@]}"
+        do
+          tokentodelete=$(jq -r --arg project $project '.projects[] | select(.projectName==$project) | .projectToken' projectstodelete.json)
+          echo "ProjectName= ${project} and projectToken=${tokentodelete}"
+          ws_ignore_alerts -u $WS_URL -k $WS_USERKEY -o $WS_APIKEY -p $DELETE_PRODUCTTOKEN -b $tokentodelete -n $project -d $WS_PRODUCTTOKEN
+        done
+    - name: Delete Original Product
+      run: | 
+        curl -X POST "${WS_URL}/api/v1.3" -H "Content-Type: application/json" \
+        -d '{ "requestType":"deleteProduct", "userKey":"'${WS_USERKEY}'", "orgToken":"'${WS_APIKEY}'", "productToken":"'${DELETE_PRODUCTTOKEN}'"}'
     - name: 'Upload WhiteSource folder'
       uses: actions/upload-artifact@v2
       with:
