@@ -12,6 +12,7 @@ on:
 
 env:
   WS_WSS_URL: https://saas.mend.io/agent
+  WS_URL: https://saas.mend.io
   WS_PRODUCTNAME: ${{github.event.repository.name}}_${{github.ref_name}}
   WS_PROJECTPERFOLDER: true
   WS_GENERATEPROJECTDETAILSJSON: true
@@ -42,7 +43,6 @@ jobs:
         echo WS_USERKEY=${{secrets.DEV_USERKEY}} >> $GITHUB_ENV
     - name: Lookup Product based on repo and rename to _DELETE
       run: |
-        echo WS_URL=$(echo $WS_WSS_URL | awk -F "agent" '{print $1}') >> $GITHUB_ENV
         WS_PRODUCTTOKEN=$(curl -X POST "${WS_URL}/api/v1.3" -H "Content-Type: application/json" \
         -d '{ "requestType" : "getAllProducts",   "userKey" : "'${WS_USERKEY}'",  "orgToken": "'{$WS_APIKEY}'"}' | \
         jq -r --arg WS_PRODUCTNAME ${WS_PRODUCTNAME} '.products[] | select(.productName==$WS_PRODUCTNAME) | .productToken')
@@ -61,9 +61,11 @@ jobs:
         -d '{ "requestType":"saveProductTag", "userKey":"'${WS_USERKEY}'", "productToken":"'${DELETE_PRODUCTTOKEN}'", "tagkey":"CommitHash", "tagValue":"'${{github.sha}}'" }'
 #    - name: Ignore Alerts Tool
 #      run: |
-#        export WS_URL=$(echo $WS_WSS_URL | awk -F "agent" '{print $1}')
 #        pip install ws-ignore-alerts
-#        python ws_ignore_alerts.py -u $WS_URL -k $WS_USERKEY -o $WS_APIKEY -p $productToken -b $baselineProjectToken -n $destProjectName -v $destProjectVersion -t $destProjectToken -d $destProductToken
+#        IGNORETOKEN=$(curl -X POST "${WS_URL}/api/v1.3" -H "Content-Type: application/json" \
+#        -d '{ "requestType" : "getAllProjects",   "userKey" : "'${WS_USERKEY}'",  "productToken": "'{$DELETE_PRODUCTOKEN}'"}' | \
+#        jq -r --arg '.products[] | select(.projectName=="projectnametoignorealerts") | .projectToken')
+#        python ws_ignore_alerts.py -u $WS_URL -k $WS_USERKEY -o $WS_APIKEY -p $DELETE_PRODUCTTOKEN -b $IGNORETOKEN -n $destProjectName
 #    - name: Delete Original Product
 #      run: | 
 #        curl -X POST "${WS_URL}/api/v1.3" -H "Content-Type: application/json" \
