@@ -50,7 +50,7 @@ jobs:
         curl -X POST "${WS_URL}/api/v1.3" -H "Content-Type: application/json" \
         -d '{ "requestType" : "renameProduct", "userKey" : "'${WS_USERKEY}'", "productToken" : "'${WS_PRODUCTTOKEN}'", "newProductName": "'${WS_PRODUCTNAME}'_DELETE"}'
         echo DELETE_PRODUCTTOKEN=$WS_PRODUCTTOKEN >> $GITHUB_ENV
-        echo "env variable for DELETE_PRODUCTION has beent set as ${DELETE_PRODUCTTOKEN} for productName=${WS_PRODUCTNAME}_DELETE"
+        echo "env variable for DELETE_PRODUCTTOKEN has been set as $DELETE_PRODUCTTOKEN for productName=${WS_PRODUCTNAME}_DELETE"
     - name: Mend Unified Agent Scan
       run: |
         curl -LJO https://unified-agent.s3.amazonaws.com/wss-unified-agent.jar
@@ -65,11 +65,11 @@ jobs:
         curl -X POST "${WS_URL}/api/v1.3" -H "Content-Type: application/json" \
         -d '{ "requestType":"saveProductTag", "userKey":"'${WS_USERKEY}'", "productToken":"'${WS_PRODUCTTOKEN}'", "tagKey":"CommitHash", "tagValue":"'${{github.sha}}'" }'
         echo WS_PRODUCTTOKEN=$WS_PRODUCTTOKEN >> $GITHUB_ENV
-        echo "env variable for WS_PRODUCTTOKEN has beent set as ${WS_PRODUCTTOKEN} for productName=${WS_PRODUCTNAME}"
+        echo "env variable for WS_PRODUCTTOKEN has beent set as $WS_PRODUCTTOKEN for productName=${WS_PRODUCTNAME}"
     - name: Ignore Alerts Tool
       run: |
         pip install ws-ignore-alerts
-        readarray -t NEW_PROJECTS < <(jq -r '.projects[].projectName' ./scanProjectDetails.json)
+        readarray -t NEW_PROJECTS < <(jq -r '.projects[].projectName' ./whitesource/scanProjectDetails.json)
         echo "Projects to Ignore Alerts:" ${NEW_PROJECTS[*]}
         echo "Delete Token = "${DELETE_PRODUCTTOKEN}
         curl -X POST "${WS_URL}/api/v1.3" -H "Content-Type: application/json" \
