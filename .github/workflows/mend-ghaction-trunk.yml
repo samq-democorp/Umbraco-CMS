@@ -22,11 +22,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+
     - uses: actions/setup-dotnet@v2
       with:
         dotnet-version: 6.0.x
+
     - name: Build DotNET projects
       run: dotnet build umbraco.sln --configuration Release
+
+# Sets WS_APIKEY & WS_USERKEY based on branch scanned
     - name: Set keys if triggered by production branches
       if: github.ref_name == 'v10/contrib' ||
         github.ref_name == 'v9/contrib' ||
@@ -35,61 +39,92 @@ jobs:
       run: |
         echo WS_APIKEY=${{secrets.PROD_APIKEY}} >> $GITHUB_ENV
         echo WS_USERKEY=${{secrets.PROD_USERKEY}} >> $GITHUB_ENV
+
+# Sets WS_APIKEY & WS_USERKEY based on branch scanned
     - name: Set keys if triggered by development branches
       if: contains(github.ref_name, 'feature') ||
         contains(github.ref_name, 'bugfix')
       run: |
         echo WS_APIKEY=${{secrets.DEV_APIKEY}} >> $GITHUB_ENV
         echo WS_USERKEY=${{secrets.DEV_USERKEY}} >> $GITHUB_ENV
+
     - name: Lookup Product based on RepoName_branchName and rename to _DELETE
       run: |
+        : ### getAllProducts and select productName based on $WS_PRODUCTNAME
+        : ###
         WS_PRODUCTTOKEN=$(curl -X POST "${WS_URL}/api/v1.3" -H "Content-Type: application/json" \
         -d '{ "requestType" : "getAllProducts",   "userKey" : "'${WS_USERKEY}'",  "orgToken": "'${WS_APIKEY}'"}' | \
         jq -r --arg WS_PRODUCTNAME ${WS_PRODUCTNAME} '.products[] | select(.productName==$WS_PRODUCTNAME) | .productToken')
         echo "getting productToken=${WS_PRODUCTTOKEN} from productName=${WS_PRODUCTNAME}"
+        : ###
+        : ### renameProduct based on $WS_PRODUCTTOKEN fetched above
+        : ###
         curl -X POST "${WS_URL}/api/v1.3" -H "Content-Type: application/json" \
         -d '{ "requestType" : "renameProduct", "userKey" : "'${WS_USERKEY}'", "productToken" : "'${WS_PRODUCTTOKEN}'", "newProductName": "'${WS_PRODUCTNAME}'_DELETE"}'
         echo DELETE_PRODUCTTOKEN=$WS_PRODUCTTOKEN >> $GITHUB_ENV
         echo "env variable for DELETE_PRODUCTTOKEN has been set as $DELETE_PRODUCTTOKEN for productName=${WS_PRODUCTNAME}_DELETE"
+
     - name: Mend Unified Agent Scan
       run: |
         curl -LJO https://unified-agent.s3.amazonaws.com/wss-unified-agent.jar
         echo Unified Agent downloaded successfully
         java -jar wss-unified-agent.jar -d ./src
+
     - name: Tag Product with Commit
       run: |
+        : ### getAllProducts and select productName based on $WS_PRODUCTNAME after new scan and rename
+        : ###
         WS_PRODUCTTOKEN=$(curl -X POST "${WS_URL}/api/v1.3" -H "Content-Type: application/json" \
         -d '{ "requestType" : "getAllProducts",   "userKey" : "'${WS_USERKEY}'",  "orgToken": "'${WS_APIKEY}'"}' | \
         jq -r --arg WS_PRODUCTNAME ${WS_PRODUCTNAME} '.products[] | select(.productName==$WS_PRODUCTNAME) | .productToken')
         echo "getting productToken=${WS_PRODUCTTOKEN} from productName=${WS_PRODUCTNAME}"
+        : ###
+        : ### saveProductTag using $WS_PRODUCTTOKEN and github.sha
+        : ###
         curl -X POST "${WS_URL}/api/v1.3" -H "Content-Type: application/json" \
         -d '{ "requestType":"saveProductTag", "userKey":"'${WS_USERKEY}'", "productToken":"'${WS_PRODUCTTOKEN}'", "tagKey":"CommitHash", "tagValue":"'${{github.sha}}'" }'
         echo WS_PRODUCTTOKEN=$WS_PRODUCTTOKEN >> $GITHUB_ENV
         echo "env variable for WS_PRODUCTTOKEN has beent set as $WS_PRODUCTTOKEN for productName=${WS_PRODUCTNAME}"
+
     - name: Ignore Alerts Tool
       run: |
         pip install ws-ignore-alerts
+        : ###
+        : ### Load array with projects from new scan
+        : ###
         readarray -t NEW_PROJECTS < <(jq -r '.projects[].projectName' ./whitesource/scanProjectDetails.json)
         echo "Projects to Ignore Alerts:" ${NEW_PROJECTS[*]}
         echo "Delete Token = "${DELETE_PRODUCTTOKEN}
+        : ###
+        : ### getAllProjects from _DELETE product and save as .json
+        : ###
         curl -X POST "${WS_URL}/api/v1.3" -H "Content-Type: application/json" \
         -d '{ "requestType" : "getAllProjects",   "userKey" : "'${WS_USERKEY}'",  "productToken": "'${DELETE_PRODUCTTOKEN}'"}' > projectstodelete.json
+        : ###
+        : ### loop through projects selecting projectToken and running ws-ignore-alerts
+        : ###
         for project in "${NEW_PROJECTS[@]}"
         do
           tokentodelete=$(jq -r --arg project $project '.projects[] | select(.projectName==$project) | .projectToken' projectstodelete.json)
           echo "ProjectName= ${project} and projectToken=${tokentodelete}"
           ws_ignore_alerts -u $WS_URL -k $WS_USERKEY -o $WS_APIKEY -p $DELETE_PRODUCTTOKEN -b $tokentodelete -n $project -d $WS_PRODUCTTOKEN
         done
+
     - name: Delete Original Product
       run: | 
+        : ###
+        : ### deleteProduct based on $DELETE_PRODUCTTOKEN
+        : ###
         curl -X POST "${WS_URL}/api/v1.3" -H "Content-Type: application/json" \
         -d '{ "requestType":"deleteProduct", "userKey":"'${WS_USERKEY}'", "orgToken":"'${WS_APIKEY}'", "productToken":"'${DELETE_PRODUCTTOKEN}'"}'
+
     - name: 'Upload WhiteSource folder'
       uses: actions/upload-artifact@v2
       with:
         name: WhiteSource
         path: whitesource
         retention-days: 1
+
     - name: 'Upload WhiteSource folder if failure'
       uses: actions/upload-artifact@v2
       if: failure()
