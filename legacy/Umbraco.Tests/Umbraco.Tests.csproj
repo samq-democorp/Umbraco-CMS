@@ -111,7 +111,7 @@
     <PackageReference Include="Microsoft.Owin" Version="4.1.1" />
     <PackageReference Include="Microsoft.Owin.Hosting" Version="4.1.1" />
     <PackageReference Include="Microsoft.Owin.Security" Version="4.1.1" />
-    <PackageReference Include="Microsoft.Owin.Testing" Version="4.1.1" />
+    <PackageReference Include="Microsoft.Owin.Testing" Version="4.2.2" />
     <PackageReference Include="Microsoft.Web.Infrastructure" Version="1.0.0.0" />
     <PackageReference Include="MiniProfiler" Version="4.2.22" />
     <PackageReference Include="Moq" Version="4.16.1" />
