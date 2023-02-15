@@ -11,7 +11,7 @@
       <Version>3.5.107</Version>
     </PackageReference>
 
-    <PackageReference Include="Umbraco.GitVersioning.Extensions" Version="0.1.1">
+    <PackageReference Include="Umbraco.GitVersioning.Extensions" Version="0.2.0">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
   </ItemGroup>
