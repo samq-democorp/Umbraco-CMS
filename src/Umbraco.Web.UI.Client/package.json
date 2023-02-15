@@ -84,7 +84,7 @@
     "karma-jasmine": "2.0.1",
     "karma-jsdom-launcher": "^8.0.2",
     "karma-junit-reporter": "2.0.1",
-    "karma-spec-reporter": "0.0.32",
+    "karma-spec-reporter": "0.0.36",
     "less": "3.10.3",
     "lodash": "4.17.21",
     "merge-stream": "2.0.0",
