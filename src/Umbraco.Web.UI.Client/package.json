@@ -78,7 +78,7 @@
     "gulp-watch": "5.0.1",
     "gulp-wrap": "0.15.0",
     "gulp-wrap-js": "0.4.1",
-    "jasmine-core": "4.4.0",
+    "jasmine-core": "4.5.0",
     "jsdom": "20.0.0",
     "karma": "6.4.0",
     "karma-jasmine": "5.1.0",
