@@ -80,7 +80,7 @@
     "gulp-wrap-js": "0.4.1",
     "jasmine-core": "4.4.0",
     "jsdom": "20.0.0",
-    "karma": "6.4.0",
+    "karma": "6.4.1",
     "karma-jasmine": "5.1.0",
     "karma-jsdom-launcher": "13.0.0",
     "karma-junit-reporter": "2.0.1",
